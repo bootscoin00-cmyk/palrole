@@ -46,6 +46,15 @@ async function setupDatabase(){
     )
   `);
 
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW()
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS warned BOOLEAN DEFAULT false
+  `);
 
   console.log("Database siap");
 
