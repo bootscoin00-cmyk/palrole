@@ -23,6 +23,12 @@ const pool = new Pool({
 });
 
 
+console.log(
+  "DATABASE TERBACA:",
+  process.env.DATABASE_URL ? "ADA" : "TIDAK ADA"
+);
+
+
 
 // =====================
 // SETUP DATABASE
