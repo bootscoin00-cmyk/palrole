@@ -130,7 +130,7 @@ bot.on("message", async(msg)=>{
   // HELPER
 
   if(
-    users[id].messages >= 1000 &&
+    users[id].messages >= 5 &&
     users[id].role === "Member"
   ){
 
