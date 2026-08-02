@@ -173,6 +173,10 @@ userId
 
     const user = result.rows[0];
 
+console.log(
+  "DATA USER:",
+  user
+);
 
 
     // HELPER
