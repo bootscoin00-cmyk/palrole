@@ -115,7 +115,43 @@ console.log(
 
 }
 
+// =====================
+// REMOVE ADMIN
+// =====================
 
+async function removeAdmin(userId){
+
+  try{
+
+    await bot.promoteChatMember(
+      GROUP_ID,
+      userId,
+      {
+        can_manage_chat:false,
+        can_delete_messages:false,
+        can_restrict_members:false,
+        can_invite_users:false,
+        can_pin_messages:false,
+        can_promote_members:false,
+        can_change_info:false
+      }
+    );
+
+    console.log(
+      "Admin dicabut:",
+      userId
+    );
+
+  }catch(error){
+
+    console.log(
+      "REMOVE ADMIN ERROR:",
+      error.message
+    );
+
+  }
+
+}
 
 
 // =====================
