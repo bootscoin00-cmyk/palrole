@@ -152,13 +152,15 @@ msg.chat.id.toString() !== GROUP_ID
     await pool.query(
 `
 INSERT INTO users
-(user_id,name,messages)
-VALUES($1,$2,1)
+(user_id,name,messages,last_active,warned)
+VALUES($1,$2,1,NOW(),false)
 
 ON CONFLICT(user_id)
 DO UPDATE SET
 name=$2,
-messages=users.messages+1
+messages=users.messages+1,
+last_active=NOW(),
+warned=false
 `,
 [
 userId,
