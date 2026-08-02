@@ -182,7 +182,7 @@ console.log(
     // HELPER
 
     if(
-      user.messages >= 1000 &&
+      user.messages >= 15 &&
       user.role === "Member"
     ){
 
@@ -213,7 +213,7 @@ ${name} sekarang menjadi:
 
 🔵 Helper
 
-Karena sudah mencapai 5 pesan.
+Karena sudah mencapai 1000 pesan.
 `
       );
 
