@@ -68,7 +68,7 @@ bot.on("message", async(msg)=>{
 
   // cek role
 
-  if(users[id].messages >= 1000 
+  if(users[id].messages >= 10 
     && users[id].role === "Member"){
 
 
