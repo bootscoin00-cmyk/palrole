@@ -506,7 +506,11 @@ error.message
 
 });
 
+// Cek admin tidak aktif setiap 1 jam
+setInterval(checkInactiveMembers, 60 * 60 * 1000);
 
+// Jalankan sekali saat bot hidup
+checkInactiveMembers();
 
 console.log(
 "👑 Role Admin Bot aktif"
