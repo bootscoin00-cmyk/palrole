@@ -204,7 +204,7 @@ ${name} sekarang menjadi:
 
 🔵 Helper
 
-Karena sudah mencapai 1000 pesan.
+Karena sudah mencapai 5 pesan.
 `
       );
 
