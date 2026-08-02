@@ -97,12 +97,12 @@ async function promoteUser(userId, title){
 
   } catch(error){
 
-    console.log(
-      "Promote gagal:",
-      error.message
-    );
+console.log(
+  "PROMOTE ERROR:",
+  error
+);
 
-  }
+}
 
 }
 
