@@ -115,10 +115,15 @@ async function promoteUser(userId, title){
 
 bot.on("message", async(msg)=>{
 
+console.log(
+"Pesan masuk:",
+msg.chat.id,
+msg.text
+);
 
-  if(
-    msg.chat.id.toString() !== GROUP_ID
-  ) return;
+if(
+msg.chat.id.toString() !== GROUP_ID
+) return;
 
 
   if(!msg.from) return;
