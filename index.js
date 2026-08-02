@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const TelegramBot = require("node-telegram-bot-api");
-const fs = require("fs");
+const { Pool } = require("pg");
 
 
 const bot = new TelegramBot(
@@ -15,30 +15,45 @@ const bot = new TelegramBot(
 const GROUP_ID = process.env.GROUP_ID;
 
 
-// DATABASE
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
-let users = {};
 
-if (fs.existsSync("database.json")) {
-  users = JSON.parse(
-    fs.readFileSync("database.json")
-  );
+
+// =====================
+// SETUP DATABASE
+// =====================
+
+async function setupDatabase(){
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      user_id BIGINT PRIMARY KEY,
+      name TEXT,
+      messages INTEGER DEFAULT 0,
+      role TEXT DEFAULT 'Member',
+      is_admin BOOLEAN DEFAULT false
+    )
+  `);
+
+
+  console.log("Database siap");
+
 }
 
 
-
-function saveDatabase(){
-
-  fs.writeFileSync(
-    "database.json",
-    JSON.stringify(users, null, 2)
-  );
-
-}
+setupDatabase();
 
 
 
+
+// =====================
 // PROMOTE ADMIN
+// =====================
 
 async function promoteUser(userId, title){
 
@@ -51,12 +66,11 @@ async function promoteUser(userId, title){
       {
         can_manage_chat: false,
         can_delete_messages: true,
-        can_manage_video_chats: false,
         can_restrict_members: true,
-        can_promote_members: false,
-        can_change_info: false,
         can_invite_users: true,
-        can_pin_messages: true
+        can_pin_messages: true,
+        can_promote_members: false,
+        can_change_info: false
       }
     );
 
@@ -69,7 +83,7 @@ async function promoteUser(userId, title){
 
 
     console.log(
-      "Promoted:",
+      "Admin berhasil:",
       userId,
       title
     );
@@ -78,7 +92,7 @@ async function promoteUser(userId, title){
   } catch(error){
 
     console.log(
-      "Promote error:",
+      "Promote gagal:",
       error.message
     );
 
@@ -88,7 +102,10 @@ async function promoteUser(userId, title){
 
 
 
-// HITUNG PESAN MEMBER
+
+// =====================
+// HITUNG PESAN
+// =====================
 
 bot.on("message", async(msg)=>{
 
@@ -102,112 +119,146 @@ bot.on("message", async(msg)=>{
 
 
 
-  const id = msg.from.id;
+  const userId = msg.from.id;
+
+  const name =
+    msg.from.first_name || "User";
 
 
 
-  if(!users[id]){
-
-    users[id] = {
-
-      name:
-      msg.from.first_name,
-
-      messages:0,
-
-      role:"Member"
-
-    };
-
-  }
+  try {
 
 
-
-  users[id].messages++;
-
-
-
-  // HELPER
-
-  if(
-    users[id].messages >= 5 &&
-    users[id].role === "Member"
-  ){
-
-
-    users[id].role="Helper";
-
-
-    await promoteUser(
-      id,
-      "Helper"
-    );
-
-
-
-    await bot.sendMessage(
-      GROUP_ID,
+    await pool.query(
 `
-🎉 Selamat!
+INSERT INTO users
+(user_id,name,messages)
+VALUES($1,$2,1)
 
-@${msg.from.username || msg.from.first_name}
-
-Sekarang menjadi:
-
-🔵 Helper
-
-Karena telah mencapai 1000 pesan.
+ON CONFLICT(user_id)
+DO UPDATE SET
+name=$2,
+messages=users.messages+1
 `,
-{
-parse_mode:"HTML"
-}
+[
+userId,
+name
+]
 );
 
 
-  }
+
+    const result = await pool.query(
+`
+SELECT * FROM users
+WHERE user_id=$1
+`,
+[
+userId
+]
+);
 
 
 
-  // MODERATOR
-
-  if(
-    users[id].messages >= 5000 &&
-    users[id].role === "Helper"
-  ){
-
-
-    users[id].role="Moderator";
-
-
-    await promoteUser(
-      id,
-      "Moderator"
-    );
+    const user = result.rows[0];
 
 
 
-    await bot.sendMessage(
-      GROUP_ID,
+    // HELPER
+
+    if(
+      user.messages >= 1000 &&
+      user.role === "Member"
+    ){
+
+
+      await pool.query(
+`
+UPDATE users
+SET role='Helper',
+is_admin=true
+WHERE user_id=$1
+`,
+[userId]
+);
+
+
+      await promoteUser(
+        userId,
+        "Helper"
+      );
+
+
+      await bot.sendMessage(
+        GROUP_ID,
+`
+🎉 Selamat!
+
+${name} sekarang menjadi:
+
+🔵 Helper
+
+Karena sudah mencapai 1000 pesan.
+`
+      );
+
+
+    }
+
+
+
+
+
+    // MODERATOR
+
+    if(
+      user.messages >= 5000 &&
+      user.role === "Helper"
+    ){
+
+
+      await pool.query(
+`
+UPDATE users
+SET role='Moderator'
+WHERE user_id=$1
+`,
+[userId]
+);
+
+
+      await promoteUser(
+        userId,
+        "Moderator"
+      );
+
+
+      await bot.sendMessage(
+        GROUP_ID,
 `
 🎉 Upgrade Role!
 
-@${msg.from.username || msg.from.first_name}
+${name}
 
 Sekarang menjadi:
 
 🟣 Moderator
-`,
-{
-parse_mode:"HTML"
-}
-);
+`
+      );
 
+
+    }
+
+
+
+  } catch(error){
+
+    console.log(
+      "Database error:",
+      error.message
+    );
 
   }
-
-
-
-  saveDatabase();
 
 
 });
@@ -216,20 +267,32 @@ parse_mode:"HTML"
 
 
 
+
+// =====================
 // PROFILE
+// =====================
 
 bot.onText(
 /\/profile/,
 async(msg)=>{
 
 
-const id = msg.from.id;
+const userId = msg.from.id;
 
 
-const user = users[id];
+const result = await pool.query(
+`
+SELECT * FROM users
+WHERE user_id=$1
+`,
+[
+userId
+]
+);
 
 
-if(!user){
+
+if(result.rows.length === 0){
 
 return bot.sendMessage(
 msg.chat.id,
@@ -238,6 +301,9 @@ msg.chat.id,
 
 }
 
+
+
+const user=result.rows[0];
 
 
 bot.sendMessage(
@@ -257,14 +323,16 @@ ${user.messages}
 );
 
 
-
 });
 
 
 
 
 
+
+// =====================
 // ERROR
+// =====================
 
 bot.on(
 "polling_error",
