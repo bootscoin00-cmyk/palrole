@@ -13,7 +13,7 @@ const bot = new TelegramBot(
 
 
 const GROUP_ID = process.env.GROUP_ID;
-
+const OWNER_ID = process.env.OWNER_ID;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
