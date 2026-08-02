@@ -153,6 +153,105 @@ async function removeAdmin(userId){
 
 }
 
+// =====================
+// CEK ADMIN TIDAK AKTIF
+// =====================
+
+async function checkInactiveMembers() {
+
+  try {
+
+    const result = await pool.query(`
+      SELECT *
+      FROM users
+      WHERE is_admin = true
+    `);
+
+    const now = new Date();
+
+    for (const user of result.rows) {
+
+      const lastActive = new Date(user.last_active);
+
+      const diffDays =
+        (now - lastActive) / (1000 * 60 * 60 * 24);
+
+      // =====================
+      // WARNING 5 HARI
+      // =====================
+
+      if (diffDays >= 5 && diffDays < 7 && !user.warned) {
+
+        try {
+
+          await bot.sendMessage(
+            user.user_id,
+`⚠️ Peringatan!
+
+Kamu sudah tidak aktif di grup selama 5 hari.
+
+Jika dalam 2 hari ke depan kamu masih belum aktif,
+status admin akan dicabut otomatis.
+
+Cukup kirim 1 pesan di grup untuk mempertahankan jabatanmu.`
+          );
+
+        } catch {
+
+          console.log(`Tidak bisa mengirim DM ke ${user.name}`);
+        }
+
+        await pool.query(
+          `
+          UPDATE users
+          SET warned = true
+          WHERE user_id = $1
+          `,
+          [user.user_id]
+        );
+
+      }
+
+      // =====================
+      // CABUT ADMIN 7 HARI
+      // =====================
+
+      if (diffDays >= 7) {
+
+        await removeAdmin(user.user_id);
+
+        await pool.query(
+          `
+          UPDATE users
+          SET
+            role = 'Member',
+            is_admin = false,
+            warned = false
+          WHERE user_id = $1
+          `,
+          [user.user_id]
+        );
+
+        await bot.sendMessage(
+          GROUP_ID,
+`📢 Status Admin Dicabut
+
+${user.name} kehilangan status admin karena tidak aktif selama 7 hari.
+
+Silakan kembali aktif untuk mendapatkan role kembali.`
+        );
+
+      }
+
+    }
+
+  } catch (error) {
+
+    console.log("CHECK INACTIVE ERROR:", error.message);
+
+  }
+
+}
 
 // =====================
 // HITUNG PESAN
