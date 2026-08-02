@@ -182,7 +182,7 @@ console.log(
     // HELPER
 
     if(
-      user.messages >= 15 &&
+      user.messages >= 1000 &&
       user.role === "Member"
     ){
 
