@@ -170,7 +170,12 @@ async function checkInactiveMembers() {
     const now = new Date();
 
     for (const user of result.rows) {
-
+ 
+      // Jangan proses owner
+if (user.user_id.toString() === OWNER_ID) {
+  continue;
+}
+     
       const lastActive = new Date(user.last_active);
 
       const diffDays =
